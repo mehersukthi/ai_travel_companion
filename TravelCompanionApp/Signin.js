@@ -1,19 +1,36 @@
 import React, { useState } from 'react';
 import { StyleSheet, Text, View, TextInput, TouchableOpacity } from 'react-native';
 import { signInWithEmailAndPassword } from 'firebase/auth';
-import { auth } from './firebase'; // Ensure the path is correct
+import { auth, db } from './firebase';
+import { doc, getDoc } from 'firebase/firestore';
 
-export default function SignIn({ onSignInSuccess }) {
+export default function SignIn({ onSignInSuccess, onBack }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+
+  const checkUserProfile = async (userId) => {
+    try {
+      const userDoc = await getDoc(doc(db, 'users', userId));
+      if (userDoc.exists()) {
+        const userData = userDoc.data();
+        return Boolean(userData.firstName && userData.lastName && userData.age);
+      }
+      return false;
+    } catch (error) {
+      console.error('Error checking user profile:', error);
+      return false;
+    }
+  };
 
   const handleSignIn = async () => {
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
       console.log('User signed in successfully');
-      onSignInSuccess(user.uid);
+      
+      const hasProfile = await checkUserProfile(user.uid);
+      onSignInSuccess(user.uid, hasProfile);
     } catch (error) {
       console.error('Error signing in:', error);
       setError('Invalid email or password');
@@ -30,6 +47,7 @@ export default function SignIn({ onSignInSuccess }) {
         value={email}
         onChangeText={setEmail}
         keyboardType="email-address"
+        autoCapitalize="none"
       />
       <TextInput
         style={styles.input}
@@ -40,6 +58,10 @@ export default function SignIn({ onSignInSuccess }) {
       />
       <TouchableOpacity onPress={handleSignIn} style={styles.button}>
         <Text style={styles.buttonText}>Sign In</Text>
+      </TouchableOpacity>
+      
+      <TouchableOpacity onPress={onBack} style={styles.backButton}>
+        <Text style={styles.buttonText}>Back</Text>
       </TouchableOpacity>
     </View>
   );
@@ -70,6 +92,15 @@ const styles = StyleSheet.create({
     padding: 10,
     borderRadius: 5,
     alignItems: 'center',
+    width: '100%',
+    marginBottom: 10,
+  },
+  backButton: {
+    backgroundColor: '#6c757d',
+    padding: 10,
+    borderRadius: 5,
+    alignItems: 'center',
+    width: '100%',
   },
   buttonText: {
     color: '#fff',
