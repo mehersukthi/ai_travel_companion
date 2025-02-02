@@ -3,18 +3,23 @@ import { StyleSheet, Text, View, TouchableOpacity } from 'react-native';
 import Signup from './Signup'; // Ensure the path is correct
 import Chatbot from './Chatbot'; // Ensure the path is correct
 import SearchPage from './SearchPage'; // Import SearchPage directly
+import CreateProfile from './CreateProfile';
 
 export default function App() {
   const [currentPage, setCurrentPage] = useState('home');
+  const [userId, setUserId] = useState(null);
 
-  const handleNavigation = (page) => {
+  const handleNavigation = (page, userId = null) => {
+    setUserId(userId);
     setCurrentPage(page);
   };
 
   const renderPage = () => {
     switch (currentPage) {
       case 'signup':
-        return <Signup onSignupSuccess={() => handleNavigation('home')} />;
+        return <Signup onSignupSuccess={(userId) => handleNavigation('createProfile', userId)} />;
+      case 'createProfile':
+        return <CreateProfile userId={userId} onProfileCreated={() => handleNavigation('home')} />;
       case 'chatbot':
         return <Chatbot />;
       default:

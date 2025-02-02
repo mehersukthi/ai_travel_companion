@@ -13,15 +13,15 @@ export default function Signup({ onSignupSuccess }) {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
 
-      // Store additional user details in Firestore
+      // Store initial user details in Firestore
       await setDoc(doc(collection(db, 'users'), user.uid), {
         email: email,
         password: password
       });
 
       console.log('User registered successfully'); 
-      // Directly call the navigation callback to go back to the home page
-      onSignupSuccess();
+      // Navigate to the CreateProfile page with the user ID
+      onSignupSuccess(user.uid);
     } catch (error) {
       console.error('Error signing up:', error);
       // Optionally handle errors here, e.g., show a message to the user
