@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, Text, View, TouchableOpacity } from 'react-native';
+import { StyleSheet, Text, View, TouchableOpacity, ImageBackground } from 'react-native';
 import { auth } from './firebase';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import Signup from './Signup';
@@ -118,27 +118,34 @@ export default function App() {
           );
         } else {
           return (
-            <View style={styles.container}>
-              <Text style={styles.title}>Welcome to Travel Companion App</Text>
-              <TouchableOpacity
-                style={styles.button}
-                onPress={() => handleNavigation('signup')}
-              >
-                <Text style={styles.buttonText}>Sign Up</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.button}
-                onPress={() => handleNavigation('signin')}
-              >
-                <Text style={styles.buttonText}>Sign In</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.button, styles.chatbotButton]}
-                onPress={() => handleNavigation('chatbot')}
-              >
-                <Text style={styles.buttonText}>Try Our Chatbot</Text>
-              </TouchableOpacity>
-            </View>
+            <ImageBackground
+              source={require('./assets/main_img.jpg')}
+              style={styles.backgroundImage}
+            >
+              <View style={styles.overlay}>
+                <Text style={styles.mainTitle}>Welcome to Travel Companion App</Text>
+                <View style={styles.buttonContainer}>
+                  <TouchableOpacity
+                    style={[styles.button, styles.transparentButton]}
+                    onPress={() => handleNavigation('signup')}
+                  >
+                    <Text style={styles.buttonText}>Sign Up</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.button, styles.transparentButton]}
+                    onPress={() => handleNavigation('signin')}
+                  >
+                    <Text style={styles.buttonText}>Sign In</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.button, styles.transparentButton, styles.chatbotButton]}
+                    onPress={() => handleNavigation('chatbot')}
+                  >
+                    <Text style={styles.buttonText}>Try Our Chatbot</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </ImageBackground>
           );
         }
     }
@@ -153,6 +160,23 @@ const styles = StyleSheet.create({
     padding: 20,
     backgroundColor: '#fff',
   },
+  backgroundImage: {
+    flex: 1,
+    width: '100%',
+    height: '100%',
+  },
+  overlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  buttonContainer: {
+    width: '100%',
+    alignItems: 'center',
+    marginTop: 20,
+  },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -162,18 +186,34 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     marginBottom: 20,
+    color: '#000',
+  },
+  mainTitle: {
+    fontSize: 32,
+    marginBottom: 40,
+    color: '#fff',
+    textAlign: 'center',
+    fontWeight: 'bold',
+    textShadowColor: 'rgba(0, 0, 0, 0.75)',
+    textShadowOffset: { width: -1, height: 1 },
+    textShadowRadius: 10,
   },
   button: {
     backgroundColor: '#007BFF',
-    padding: 10,
-    borderRadius: 5,
+    padding: 15,
+    borderRadius: 25,
     alignItems: 'center',
     marginVertical: 10,
-    width: '80%',
+    width: '30%',
     alignSelf: 'center',
   },
+  transparentButton: {
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    borderWidth: 1,
+    borderColor: '#fff',
+  },
   chatbotButton: {
-    backgroundColor: '#28a745', // Different color for chatbot button
+    backgroundColor: 'rgba(255, 192, 203, 0.66)',
     marginTop: 20,
   },
   signOutButton: {
@@ -183,16 +223,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   backButton: {
-    backgroundColor: '#6c757d',
-    padding: 10,
-    borderRadius: 5,
+    backgroundColor: '#007BFF',
+    padding: 15,
+    borderRadius: 25,
     alignItems: 'center',
-    marginTop: 20,
-    width: '80%',
+    marginVertical: 10,
+    width: '30%',
     alignSelf: 'center',
   },
   buttonText: {
     color: '#fff',
     fontSize: 16,
+    fontWeight: '600',
   },
 });
