@@ -1,198 +1,201 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { StyleSheet, Text, View, TextInput, TouchableOpacity, FlatList, Alert } from 'react-native';
 import { db } from './firebase'; // Import db from firebase.js
-import { collection, query, where, getDocs, doc, updateDoc, getDoc } from 'firebase/firestore'; // Import necessary Firestore functions
+import { collection, query, where, getDocs, updateDoc, doc, getDoc } from 'firebase/firestore'; // Firestore functions
 
 export default function SearchPage({ userId }) {
-  const [location, setLocation] = useState('');
-  const [gender, setGender] = useState('');
-  const [age, setAge] = useState('');
-  const [language, setLanguage] = useState('');
-  const [dates, setDates] = useState('');
-  const [matches, setMatches] = useState([]);
-  const [loading, setLoading] = useState(false);
+const [location, setLocation] = useState('');
+const [gender, setGender] = useState('');
+const [age, setAge] = useState('');
+const [language, setLanguage] = useState('');
+const [dates, setDates] = useState('');
+const [matches, setMatches] = useState([]);
+const [loading, setLoading] = useState(false);
 
-  // Function to update user dates after search
-  const updateUserSearchDates = async (userId, searchDate) => {
-    try {
-      // Assuming 'dates' is an array of search dates in the user's document
-      const userRef = doc(db, 'users', userId);
-      
-      // Get the current data of the user document
-      const userSnapshot = await getDoc(userRef);
-      
-      // Check if the document exists and if 'dates' field is initialized
-      const userData = userSnapshot.data();
-      const currentDates = userData?.dates || []; // If 'dates' field doesn't exist, use an empty array
+// Function to update user dates after search
+const updateUserSearchDates = async (userId, searchDate) => {
+if (!userId) {
+  console.error('User ID is missing');
+  return;
+}
 
-      // Add the new search date to the 'dates' array
-      const updatedDates = [...currentDates, searchDate];
+try {
+  const userRef = doc(db, 'users', userId);
+  const userSnapshot = await getDoc(userRef);
 
-      // Update the user's 'dates' field with the new array
-      await updateDoc(userRef, {
-        dates: updatedDates
-      });
+  if (!userSnapshot.exists()) {
+    console.error('User not found!');
+    return;
+  }
 
-      console.log('User search dates updated successfully');
-    } catch (error) {
-      console.error('Error updating user dates:', error);
-    }
-  };
+  const userData = userSnapshot.data();
+  const currentDates = userData?.dates || [];  // Fetch current dates if they exist
 
-  // Function to handle search
-  const handleSearch = async () => {
-    if (!location || !gender || !age || !language || !dates) {
-      Alert.alert('Error', 'Please provide all search parameters.');
-      return;
-    }
+  // Add the new search date to the existing dates array
+  const updatedDates = [...currentDates, searchDate];
 
-    setLoading(true);
+  await updateDoc(userRef, {
+    dates: updatedDates
+  });
 
-    console.log('Searching with the following params:');
-    console.log({ location, gender, age, language, dates });
+  console.log('User search dates updated successfully');
+} catch (error) {
+  console.error('Error updating user dates:', error);
+}
+};
 
-    try {
-      // Query Firestore to get users who match the search criteria
-      const usersRef = collection(db, 'users');
-      const q = query(
-        usersRef,
-        where('location', '==', location),
-        where('gender', '==', gender),
-        where('age', '==', age),
-        where('language', '==', language)
-      );
+// Function to handle search
+const handleSearch = async () => {
+if (!userId) {
+  Alert.alert('Error', 'User is not authenticated. Please sign in.');
+  return;
+}
 
-      console.log('Executing query...');
+if (!location || !dates) {
+  Alert.alert('Error', 'Location and Dates are mandatory.');
+  return;
+}
 
-      const querySnapshot = await getDocs(q);
+setLoading(true);
 
-      if (querySnapshot.empty) {
-        Alert.alert('No Matches', 'No users found with the given criteria.');
-      }
+console.log('Searching with the following params:');
+console.log({ location, gender, age, language, dates });
 
-      const matchedUsers = [];
-      querySnapshot.forEach((doc) => {
-        matchedUsers.push(doc.data());
-      });
+try {
+  const usersRef = collection(db, 'users');
+  let queryRef = query(usersRef, where('location', '==', location));
 
-      setMatches(matchedUsers); // Update state with matched users
+  if (gender) queryRef = query(queryRef, where('gender', '==', gender));
+  if (age) queryRef = query(queryRef, where('age', '==', age));
+  if (language) queryRef = query(queryRef, where('language', '==', language));
 
-      // Now update the dates of the querying user (the one who performed the search)
-      if (userId) {
-        await updateUserSearchDates(userId, dates);
-      }
-    } catch (error) {
-      console.error('Error fetching data from Firebase:', error);
-      Alert.alert('Error', 'There was an issue fetching the matches.');
-    } finally {
-      setLoading(false);
-    }
-  };
+  console.log('Executing query...');
 
-  return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Search by Criteria</Text>
+  const querySnapshot = await getDocs(queryRef);
 
-      <TextInput
-        style={styles.input}
-        placeholder="Location"
-        value={location}
-        onChangeText={setLocation}
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Gender"
-        value={gender}
-        onChangeText={setGender}
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Age"
-        value={age}
-        onChangeText={setAge}
-        keyboardType="numeric"
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Language"
-        value={language}
-        onChangeText={setLanguage}
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Dates (YYYY-MM-DD)"
-        value={dates}
-        onChangeText={setDates}
-      />
+  if (querySnapshot.empty) {
+    Alert.alert('No Matches', 'No users found with the given criteria.');
+  }
 
-      <TouchableOpacity onPress={handleSearch} style={styles.searchButton}>
-        <Text style={styles.searchButtonText}>Search</Text>
-      </TouchableOpacity>
+  const matchedUsers = [];
+  querySnapshot.forEach((doc) => {
+    matchedUsers.push(doc.data());
+  });
 
-      {loading ? (
-        <Text style={styles.loadingText}>Searching...</Text>
-      ) : (
-        <FlatList
-          data={matches}
-          renderItem={({ item }) => (
-            <View style={styles.matchItem}>
-              <Text style={styles.matchText}>{`Location: ${item.location}`}</Text>
-              <Text style={styles.matchText}>{`Gender: ${item.gender}`}</Text>
-              <Text style={styles.matchText}>{`Age: ${item.age}`}</Text>
-              <Text style={styles.matchText}>{`Language: ${item.language}`}</Text>
-            </View>
-          )}
-          keyExtractor={(item, index) => index.toString()}
-        />
+  setMatches(matchedUsers); // Update state with matched users
+
+  // Now update the dates of the querying user
+  await updateUserSearchDates(userId, dates);
+
+} catch (error) {
+  console.error('Error fetching data:', error);
+  Alert.alert('Error', 'There was an issue fetching the matches.');
+} finally {
+  setLoading(false);
+}
+};
+
+return (
+<View style={styles.container}>
+  <Text style={styles.title}>Search by Criteria</Text>
+
+  <TextInput
+    style={styles.input}
+    placeholder="Location (required)"
+    value={location}
+    onChangeText={setLocation}
+  />
+  <TextInput
+    style={styles.input}
+    placeholder="Gender"
+    value={gender}
+    onChangeText={setGender}
+  />
+  <TextInput
+    style={styles.input}
+    placeholder="Age"
+    value={age}
+    onChangeText={setAge}
+    keyboardType="numeric"
+  />
+  <TextInput
+    style={styles.input}
+    placeholder="Language"
+    value={language}
+    onChangeText={setLanguage}
+  />
+  <TextInput
+    style={styles.input}
+    placeholder="Dates (YYYY-MM-DD) (required)"
+    value={dates}
+    onChangeText={setDates}
+  />
+
+  <TouchableOpacity onPress={handleSearch} style={styles.searchButton}>
+    <Text style={styles.searchButtonText}>Search</Text>
+  </TouchableOpacity>
+
+  {loading ? (
+    <Text style={styles.loadingText}>Searching...</Text>
+  ) : (
+    <FlatList
+      data={matches}
+      renderItem={({ item }) => (
+        <View style={styles.matchItem}>
+          <Text style={styles.matchText}>Name: ${item.firstName}</Text>
+          <Text style={styles.matchText}>Location: ${item.location}</Text>
+          <Text style={styles.matchText}>Gender: ${item.gender}</Text>
+          <Text style={styles.matchText}>Age: ${item.age}</Text>
+          <Text style={styles.matchText}>Language: ${item.language}</Text>
+        </View>
       )}
-    </View>
-  );
+      keyExtractor={(item, index) => index.toString()}
+    />
+  )}
+</View>
+);
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 20,
-    backgroundColor: '#fff',
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    textAlign: 'center',
-    marginBottom: 20,
-  },
-  input: {
-    height: 40,
-    marginBottom: 10,
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 5,
-    paddingLeft: 10,
-  },
-  searchButton: {
-    backgroundColor: '#007BFF',
-    padding: 10,
-    borderRadius: 5,
-    marginBottom: 20,
-    alignItems: 'center',
-  },
-  searchButtonText: {
-    color: '#fff',
-    fontSize: 16,
-  },
-  loadingText: {
-    textAlign: 'center',
-    fontSize: 16,
-    color: '#888',
-  },
-  matchItem: {
-    backgroundColor: '#f9f9f9',
-    padding: 15,
-    marginBottom: 10,
-    borderRadius: 5,
-  },
-  matchText: {
-    fontSize: 14,
-    color: '#333',
-  },
+container: {
+flex: 1,
+padding: 20,
+backgroundColor: '#fff',
+},
+title: {
+fontSize: 24,
+fontWeight: 'bold',
+marginBottom: 20,
+},
+input: {
+height: 40,
+borderColor: '#ccc',
+borderWidth: 1,
+borderRadius: 5,
+paddingHorizontal: 10,
+marginBottom: 15,
+},
+searchButton: {
+backgroundColor: '#007BFF',
+padding: 10,
+borderRadius: 5,
+alignItems: 'center',
+},
+searchButtonText: {
+color: '#fff',
+fontSize: 16,
+},
+loadingText: {
+textAlign: 'center',
+fontSize: 18,
+color: '#007BFF',
+},
+matchItem: {
+padding: 10,
+borderBottomWidth: 1,
+borderBottomColor: '#ccc',
+},
+matchText: {
+fontSize: 16,
+},
 });
