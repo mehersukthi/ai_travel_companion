@@ -43,9 +43,17 @@ export default function App() {
     }
   };
 
-  const handleNavigation = (page, userId = null) => {
+  const handleNavigation = (page, userId = null, hasProfile = false) => {
     setUserId(userId);
-    setCurrentPage(page);
+    if (page === 'signin' && userId) {
+      if (hasProfile) {
+        setCurrentPage('home'); // User has profile, go to home
+      } else {
+        setCurrentPage('createProfile'); // User doesn't have profile, go to create profile
+      }
+    } else {
+      setCurrentPage(page); // Handle all other navigation normally
+    }
   };
 
   const renderPage = () => {
@@ -59,9 +67,19 @@ export default function App() {
 
     switch (currentPage) {
       case 'signup':
-        return <Signup onSignupSuccess={() => handleNavigation('signin')} />;
+        return (
+          <Signup 
+            onSignupSuccess={() => handleNavigation('signin')}
+            onBack={() => handleNavigation('home')}
+          />
+        );
       case 'signin':
-        return <SignIn onSignInSuccess={(userId) => handleNavigation('createProfile', userId)} />;
+        return (
+          <SignIn 
+            onSignInSuccess={(userId, hasProfile) => handleNavigation('signin', userId, hasProfile)}
+            onBack={() => handleNavigation('home')}
+          />
+        );
       case 'createProfile':
         return <CreateProfile userId={userId} onProfileCreated={() => handleNavigation('home')} />;
       case 'chatbot':

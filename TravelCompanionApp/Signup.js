@@ -4,7 +4,7 @@ import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { auth, db } from './firebase';
 import { collection, doc, setDoc } from 'firebase/firestore';
 
-export default function Signup({ onSignupSuccess }) {
+export default function Signup({ onSignupSuccess, onBack }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -14,13 +14,11 @@ export default function Signup({ onSignupSuccess }) {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
 
-      // Store initial user details in Firestore
       await setDoc(doc(collection(db, 'users'), user.uid), {
         email: email
       });
 
       console.log('User registered successfully');
-      // Navigate to the SignIn page
       onSignupSuccess();
     } catch (error) {
       console.error('Error signing up:', error);
@@ -38,6 +36,7 @@ export default function Signup({ onSignupSuccess }) {
         value={email}
         onChangeText={setEmail}
         keyboardType="email-address"
+        autoCapitalize="none"
       />
       <TextInput
         style={styles.input}
@@ -48,6 +47,10 @@ export default function Signup({ onSignupSuccess }) {
       />
       <TouchableOpacity onPress={handleSignUp} style={styles.button}>
         <Text style={styles.buttonText}>Sign Up</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity onPress={onBack} style={styles.backButton}>
+        <Text style={styles.buttonText}>Back</Text>
       </TouchableOpacity>
     </View>
   );
@@ -78,6 +81,15 @@ const styles = StyleSheet.create({
     padding: 10,
     borderRadius: 5,
     alignItems: 'center',
+    width: '100%',
+    marginBottom: 10,
+  },
+  backButton: {
+    backgroundColor: '#6c757d',
+    padding: 10,
+    borderRadius: 5,
+    alignItems: 'center',
+    width: '100%',
   },
   buttonText: {
     color: '#fff',
