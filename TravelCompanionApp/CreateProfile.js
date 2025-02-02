@@ -13,7 +13,8 @@ export default function CreateProfile({ userId, onProfileCreated }) {
   const [location, setLocation] = useState('');
   const [hobbies, setHobbies] = useState('');
   const [bio, setBio] = useState('');
-
+  const [dates, setDates] = useState('');
+  const [travel, setTravelLocation] = useState('');
   const handleProfileCreation = async () => {
     try {
       // Update user profile in Firestore
@@ -26,6 +27,8 @@ export default function CreateProfile({ userId, onProfileCreated }) {
         location,
         hobbies,
         bio,
+        dates,
+        travel
       });
 
       console.log('Profile created successfully');
@@ -87,6 +90,18 @@ export default function CreateProfile({ userId, onProfileCreated }) {
         placeholder="Short Bio"
         value={bio}
         onChangeText={setBio}
+      />
+       <TextInput
+        style={styles.input}
+        placeholder="Dates you are travelling on"
+        value={dates}
+        onChangeText={setDates}
+      />
+       <TextInput
+        style={styles.input}
+        placeholder="Travel location"
+        value={travel}
+        onChangeText={setTravelLocation}
       />
       <TouchableOpacity onPress={handleProfileCreation} style={styles.button}>
         <Text style={styles.buttonText}>Create Profile</Text>
