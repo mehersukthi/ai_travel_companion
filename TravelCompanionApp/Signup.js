@@ -1,11 +1,10 @@
-// components/Signup.js
 import React, { useState } from 'react';
-import { StyleSheet, Text, View, TextInput, TouchableOpacity, Alert } from 'react-native';
+import { StyleSheet, Text, View, TextInput, TouchableOpacity } from 'react-native';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
-import { auth, db } from './firebase'; 
+import { auth, db } from './firebase'; // Ensure the path is correct
 import { collection, doc, setDoc } from 'firebase/firestore';
 
-export default function Signup() {
+export default function Signup({ onSignupSuccess }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
@@ -19,14 +18,16 @@ export default function Signup() {
         email: email,
         password: password
       });
+
       console.log('User registered successfully'); 
-      Alert.alert('Success', 'User registered successfully!');
+      // Directly call the navigation callback to go back to the home page
+      onSignupSuccess();
     } catch (error) {
       console.error('Error signing up:', error);
-      Alert.alert('Error', error.message);
+      // Optionally handle errors here, e.g., show a message to the user
     }
   };
-
+  
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Sign Up</Text>

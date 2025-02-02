@@ -1,52 +1,44 @@
 import React, { useState } from 'react';
-import {
-  StyleSheet,
-  Text,
-  View,
-  TextInput,
-  TouchableOpacity,
-  FlatList,
-  Alert
-} from 'react-native';
-import firestore from '@react-native-firebase/firestore';
+import { StyleSheet, Text, View, TextInput, TouchableOpacity, FlatList, Alert } from 'react-native';
+import { db } from './firebase'; // Import db from firebase.js
+import { collection, query, where, getDocs } from 'firebase/firestore'; // Import necessary Firestore functions
 
 export default function SearchPage() {
-  // State variables for storing the email input and fetched data
-  const [email, setEmail] = useState('');
-  const [matches, setMatches] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [email, setEmail] = useState(''); // State to store user input
+  const [matches, setMatches] = useState([]); // State to store matched users
+  const [loading, setLoading] = useState(false); // State to handle loading status
 
   // Function to handle search based on email
   const handleSearch = async () => {
     if (!email.trim()) {
-      Alert.alert("Error", "Please enter an email to search.");
+      Alert.alert('Error', 'Please enter an email to search.');
       return;
     }
 
     setLoading(true);
 
     try {
-      // Query Firestore to get users whose email matches
-      const querySnapshot = await firestore()
-        .collection('users') // Assuming 'users' collection
-        .where('email', '==', email) // Query for exact email match
-        .get();
+      // Firestore query to fetch users whose email matches the input
+      const usersRef = collection(db, 'users'); // Assuming 'users' is the collection where user data is stored
+      const q = query(usersRef, where('email', '==', email)); // Query to match email
+
+      const querySnapshot = await getDocs(q); // Execute the query
 
       if (querySnapshot.empty) {
-        Alert.alert("No Matches", "No users found with that email.");
+        Alert.alert('No Matches', 'No users found with that email.');
       }
 
       const matchedUsers = [];
       querySnapshot.forEach((doc) => {
-        matchedUsers.push(doc.data());
+        matchedUsers.push(doc.data()); // Push matched users into the array
       });
 
-      setMatches(matchedUsers); // Set the matched users
+      setMatches(matchedUsers); // Update state with matched users
     } catch (error) {
-      console.error("Error fetching data from Firebase: ", error);
-      Alert.alert("Error", "There was an issue fetching the matches.");
+      console.error('Error fetching data from Firebase: ', error);
+      Alert.alert('Error', 'There was an issue fetching the matches.');
     } finally {
-      setLoading(false);
+      setLoading(false); // End the loading state
     }
   };
 
@@ -58,7 +50,7 @@ export default function SearchPage() {
         style={styles.input}
         placeholder="Enter email"
         value={email}
-        onChangeText={setEmail}
+        onChangeText={setEmail} // Update email state on input change
       />
 
       <TouchableOpacity onPress={handleSearch} style={styles.searchButton}>
@@ -66,17 +58,17 @@ export default function SearchPage() {
       </TouchableOpacity>
 
       {loading ? (
-        <Text style={styles.loadingText}>Searching...</Text>
+        <Text style={styles.loadingText}>Searching...</Text> // Show loading message when searching
       ) : (
         <FlatList
-          data={matches}
+          data={matches} // Display matched users
           renderItem={({ item }) => (
             <View style={styles.matchItem}>
               <Text style={styles.matchText}>{`Email: ${item.email}`}</Text>
-              <Text style={styles.matchText}>{`Password: ${item.password}`}</Text>
+              <Text style={styles.matchText}>{`Password: ${item.password}`}</Text> {/* Update to display more user data if necessary */}
             </View>
           )}
-          keyExtractor={(item, index) => index.toString()}
+          keyExtractor={(item, index) => index.toString()} // Unique key for each list item
         />
       )}
     </View>
