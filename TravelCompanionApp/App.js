@@ -1,13 +1,40 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { StyleSheet, Text, View, TouchableOpacity } from 'react-native';
-import Signup from './Signup'; // Ensure the path is correct
-import Chatbot from './Chatbot'; // Ensure the path is correct
-import SearchPage from './SearchPage'; // Import SearchPage directly
+import { auth } from './firebase';
+import { onAuthStateChanged, signOut } from 'firebase/auth';
+import Signup from './Signup';
+import SignIn from './Signin';
+import Chatbot from './Chatbot';
+import SearchPage from './SearchPage';
 import CreateProfile from './CreateProfile';
 
 export default function App() {
   const [currentPage, setCurrentPage] = useState('home');
   const [userId, setUserId] = useState(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setIsAuthenticated(!!user);
+      if (user) {
+        setUserId(user.uid);
+      } else {
+        setUserId(null);
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  const handleSignOut = async () => {
+    try {
+      await signOut(auth);
+      setCurrentPage('home');
+      setIsAuthenticated(false);
+    } catch (error) {
+      console.error('Error signing out:', error);
+    }
+  };
 
   const handleNavigation = (page, userId = null) => {
     setUserId(userId);
@@ -17,34 +44,75 @@ export default function App() {
   const renderPage = () => {
     switch (currentPage) {
       case 'signup':
-        return <Signup onSignupSuccess={(userId) => handleNavigation('createProfile', userId)} />;
+        return <Signup onSignupSuccess={() => handleNavigation('signin')} />;
+      case 'signin':
+        return <SignIn onSignInSuccess={(userId) => handleNavigation('createProfile', userId)} />;
       case 'createProfile':
         return <CreateProfile userId={userId} onProfileCreated={() => handleNavigation('home')} />;
       case 'chatbot':
-        return <Chatbot />;
-      default:
         return (
           <View style={styles.container}>
-            <Text style={styles.title}>Welcome to Travel Companion App</Text>
-
-            {/* Render SearchPage directly */}
-            <SearchPage /> {/* This is where SearchPage is rendered directly */}
-
-            {/* Existing buttons for Sign Up and Chatbot */}
+            <Chatbot />
             <TouchableOpacity
-              style={styles.button}
-              onPress={() => handleNavigation('signup')}
+              style={styles.backButton}
+              onPress={() => handleNavigation('home')}
             >
-              <Text style={styles.buttonText}>Sign Up</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.button}
-              onPress={() => handleNavigation('chatbot')}
-            >
-              <Text style={styles.buttonText}>Chatbot</Text>
+              <Text style={styles.buttonText}>Back to Home</Text>
             </TouchableOpacity>
           </View>
         );
+      default:
+        if (isAuthenticated) {
+          return (
+            <View style={styles.container}>
+              <View style={styles.header}>
+                <Text style={styles.title}>Travel Companion App</Text>
+                <TouchableOpacity 
+                  style={styles.signOutButton}
+                  onPress={handleSignOut}
+                >
+                  <Text style={styles.buttonText}>Sign Out</Text>
+                </TouchableOpacity>
+              </View>
+
+              <SearchPage />
+
+              <TouchableOpacity
+                style={styles.button}
+                onPress={() => handleNavigation('chatbot')}
+              >
+                <Text style={styles.buttonText}>Chatbot</Text>
+              </TouchableOpacity>
+            </View>
+          );
+        } else {
+          return (
+            <View style={styles.container}>
+              <Text style={styles.title}>Welcome to Travel Companion App</Text>
+              
+              <TouchableOpacity
+                style={styles.button}
+                onPress={() => handleNavigation('signup')}
+              >
+                <Text style={styles.buttonText}>Sign Up</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.button}
+                onPress={() => handleNavigation('signin')}
+              >
+                <Text style={styles.buttonText}>Sign In</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.button, styles.chatbotButton]}
+                onPress={() => handleNavigation('chatbot')}
+              >
+                <Text style={styles.buttonText}>Try Our Chatbot</Text>
+              </TouchableOpacity>
+            </View>
+          );
+        }
     }
   };
 
@@ -54,10 +122,14 @@ export default function App() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
     padding: 20,
     backgroundColor: '#fff',
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
   },
   title: {
     fontSize: 24,
@@ -70,6 +142,26 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginVertical: 10,
     width: '80%',
+    alignSelf: 'center',
+  },
+  chatbotButton: {
+    backgroundColor: '#28a745', // Different color for chatbot button
+    marginTop: 20,
+  },
+  signOutButton: {
+    backgroundColor: '#dc3545',
+    padding: 8,
+    borderRadius: 5,
+    alignItems: 'center',
+  },
+  backButton: {
+    backgroundColor: '#6c757d',
+    padding: 10,
+    borderRadius: 5,
+    alignItems: 'center',
+    marginTop: 20,
+    width: '80%',
+    alignSelf: 'center',
   },
   buttonText: {
     color: '#fff',
