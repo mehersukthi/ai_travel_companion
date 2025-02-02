@@ -1,36 +1,28 @@
 import React, { useState } from 'react';
 import { StyleSheet, Text, View, TextInput, TouchableOpacity } from 'react-native';
-import { createUserWithEmailAndPassword } from 'firebase/auth';
-import { auth, db } from './firebase';
-import { collection, doc, setDoc } from 'firebase/firestore';
+import { signInWithEmailAndPassword } from 'firebase/auth';
+import { auth } from './firebase'; // Ensure the path is correct
 
-export default function Signup({ onSignupSuccess }) {
+export default function SignIn({ onSignInSuccess }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
 
-  const handleSignUp = async () => {
+  const handleSignIn = async () => {
     try {
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
-
-      // Store initial user details in Firestore
-      await setDoc(doc(collection(db, 'users'), user.uid), {
-        email: email
-      });
-
-      console.log('User registered successfully');
-      // Navigate to the SignIn page
-      onSignupSuccess();
+      console.log('User signed in successfully');
+      onSignInSuccess(user.uid);
     } catch (error) {
-      console.error('Error signing up:', error);
-      setError('Error creating account: ' + error.message);
+      console.error('Error signing in:', error);
+      setError('Invalid email or password');
     }
   };
-  
+
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Sign Up</Text>
+      <Text style={styles.title}>Sign In</Text>
       {error ? <Text style={styles.error}>{error}</Text> : null}
       <TextInput
         style={styles.input}
@@ -46,8 +38,8 @@ export default function Signup({ onSignupSuccess }) {
         onChangeText={setPassword}
         secureTextEntry
       />
-      <TouchableOpacity onPress={handleSignUp} style={styles.button}>
-        <Text style={styles.buttonText}>Sign Up</Text>
+      <TouchableOpacity onPress={handleSignIn} style={styles.button}>
+        <Text style={styles.buttonText}>Sign In</Text>
       </TouchableOpacity>
     </View>
   );

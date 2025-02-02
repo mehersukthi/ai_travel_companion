@@ -27,8 +27,8 @@ export default function App() {
           <View style={styles.container}>
             <Text style={styles.title}>Welcome to Travel Companion App</Text>
 
-            {/* Pass userId to SearchPage */}
-            <SearchPage userId={userId} /> {/* Pass the userId prop here */}
+            {/* Render SearchPage directly */}
+            <SearchPage /> {/* This is where SearchPage is rendered directly */}
 
             {/* Existing buttons for Sign Up and Chatbot */}
             <TouchableOpacity
