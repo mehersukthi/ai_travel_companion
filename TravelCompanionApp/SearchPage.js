@@ -1,56 +1,128 @@
 import React, { useState } from 'react';
 import { StyleSheet, Text, View, TextInput, TouchableOpacity, FlatList, Alert } from 'react-native';
 import { db } from './firebase'; // Import db from firebase.js
-import { collection, query, where, getDocs } from 'firebase/firestore'; // Import necessary Firestore functions
+import { collection, query, where, getDocs, doc, updateDoc, getDoc } from 'firebase/firestore'; // Import necessary Firestore functions
 
-export default function SearchPage() {
-  const [email, setEmail] = useState(''); // State to store user input
-  const [matches, setMatches] = useState([]); // State to store matched users
-  const [loading, setLoading] = useState(false); // State to handle loading status
+export default function SearchPage({ userId }) {
+  const [location, setLocation] = useState('');
+  const [gender, setGender] = useState('');
+  const [age, setAge] = useState('');
+  const [language, setLanguage] = useState('');
+  const [dates, setDates] = useState('');
+  const [matches, setMatches] = useState([]);
+  const [loading, setLoading] = useState(false);
 
-  // Function to handle search based on email
+  // Function to update user dates after search
+  const updateUserSearchDates = async (userId, searchDate) => {
+    try {
+      // Assuming 'dates' is an array of search dates in the user's document
+      const userRef = doc(db, 'users', userId);
+      
+      // Get the current data of the user document
+      const userSnapshot = await getDoc(userRef);
+      
+      // Check if the document exists and if 'dates' field is initialized
+      const userData = userSnapshot.data();
+      const currentDates = userData?.dates || []; // If 'dates' field doesn't exist, use an empty array
+
+      // Add the new search date to the 'dates' array
+      const updatedDates = [...currentDates, searchDate];
+
+      // Update the user's 'dates' field with the new array
+      await updateDoc(userRef, {
+        dates: updatedDates
+      });
+
+      console.log('User search dates updated successfully');
+    } catch (error) {
+      console.error('Error updating user dates:', error);
+    }
+  };
+
+  // Function to handle search
   const handleSearch = async () => {
-    if (!email.trim()) {
-      Alert.alert('Error', 'Please enter an email to search.');
+    if (!location || !gender || !age || !language || !dates) {
+      Alert.alert('Error', 'Please provide all search parameters.');
       return;
     }
 
     setLoading(true);
 
-    try {
-      // Firestore query to fetch users whose email matches the input
-      const usersRef = collection(db, 'users'); // Assuming 'users' is the collection where user data is stored
-      const q = query(usersRef, where('email', '==', email)); // Query to match email
+    console.log('Searching with the following params:');
+    console.log({ location, gender, age, language, dates });
 
-      const querySnapshot = await getDocs(q); // Execute the query
+    try {
+      // Query Firestore to get users who match the search criteria
+      const usersRef = collection(db, 'users');
+      const q = query(
+        usersRef,
+        where('location', '==', location),
+        where('gender', '==', gender),
+        where('age', '==', age),
+        where('language', '==', language)
+      );
+
+      console.log('Executing query...');
+
+      const querySnapshot = await getDocs(q);
 
       if (querySnapshot.empty) {
-        Alert.alert('No Matches', 'No users found with that email.');
+        Alert.alert('No Matches', 'No users found with the given criteria.');
       }
 
       const matchedUsers = [];
       querySnapshot.forEach((doc) => {
-        matchedUsers.push(doc.data()); // Push matched users into the array
+        matchedUsers.push(doc.data());
       });
 
       setMatches(matchedUsers); // Update state with matched users
+
+      // Now update the dates of the querying user (the one who performed the search)
+      if (userId) {
+        await updateUserSearchDates(userId, dates);
+      }
     } catch (error) {
-      console.error('Error fetching data from Firebase: ', error);
+      console.error('Error fetching data from Firebase:', error);
       Alert.alert('Error', 'There was an issue fetching the matches.');
     } finally {
-      setLoading(false); // End the loading state
+      setLoading(false);
     }
   };
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Search by Email</Text>
+      <Text style={styles.title}>Search by Criteria</Text>
 
       <TextInput
         style={styles.input}
-        placeholder="Enter email"
-        value={email}
-        onChangeText={setEmail} // Update email state on input change
+        placeholder="Location"
+        value={location}
+        onChangeText={setLocation}
+      />
+      <TextInput
+        style={styles.input}
+        placeholder="Gender"
+        value={gender}
+        onChangeText={setGender}
+      />
+      <TextInput
+        style={styles.input}
+        placeholder="Age"
+        value={age}
+        onChangeText={setAge}
+        keyboardType="numeric"
+      />
+      <TextInput
+        style={styles.input}
+        placeholder="Language"
+        value={language}
+        onChangeText={setLanguage}
+      />
+      <TextInput
+        style={styles.input}
+        placeholder="Dates (YYYY-MM-DD)"
+        value={dates}
+        onChangeText={setDates}
       />
 
       <TouchableOpacity onPress={handleSearch} style={styles.searchButton}>
@@ -58,17 +130,19 @@ export default function SearchPage() {
       </TouchableOpacity>
 
       {loading ? (
-        <Text style={styles.loadingText}>Searching...</Text> // Show loading message when searching
+        <Text style={styles.loadingText}>Searching...</Text>
       ) : (
         <FlatList
-          data={matches} // Display matched users
+          data={matches}
           renderItem={({ item }) => (
             <View style={styles.matchItem}>
-              <Text style={styles.matchText}>{`Email: ${item.email}`}</Text>
-              <Text style={styles.matchText}>{`Password: ${item.password}`}</Text> {/* Update to display more user data if necessary */}
+              <Text style={styles.matchText}>{`Location: ${item.location}`}</Text>
+              <Text style={styles.matchText}>{`Gender: ${item.gender}`}</Text>
+              <Text style={styles.matchText}>{`Age: ${item.age}`}</Text>
+              <Text style={styles.matchText}>{`Language: ${item.language}`}</Text>
             </View>
           )}
-          keyExtractor={(item, index) => index.toString()} // Unique key for each list item
+          keyExtractor={(item, index) => index.toString()}
         />
       )}
     </View>
